@@ -1,4 +1,4 @@
-package io.quarkiverse.gradleui.gradle.ui.it;
+package io.quarkiverse.gradleui.it;
 
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 

@@ -1,22 +1,33 @@
-package io.quarkiverse.gradleui.gradle.ui.deployment;
+package io.quarkiverse.gradleui.deployment;
 
-import io.quarkus.bootstrap.model.ApplicationModel;
-import io.quarkus.bootstrap.workspace.WorkspaceModule;
-import io.quarkus.deployment.IsDevelopment;
-import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
-import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
-import io.quarkus.devui.spi.page.CardPageBuildItem;
-import io.quarkus.devui.spi.page.Page;
+import java.io.File;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
 import org.gradle.tooling.GradleConnector;
 import org.gradle.tooling.ProjectConnection;
 import org.gradle.tooling.model.GradleProject;
 import org.gradle.tooling.model.GradleTask;
 
-import java.io.File;
-import java.util.List;
-import java.util.stream.Collectors;
+import io.quarkiverse.gradleui.runtime.GradleConfig;
+import io.quarkiverse.gradleui.runtime.GradleConfigRecorder;
+import io.quarkiverse.gradleui.runtime.GradleJsonRPCService;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.bootstrap.workspace.WorkspaceModule;
+import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
+import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
+import io.quarkus.devui.spi.page.CardPageBuildItem;
+import io.quarkus.devui.spi.page.Page;
 
 class GradleUiProcessor {
 
@@ -28,13 +39,34 @@ class GradleUiProcessor {
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
+    @Record(ExecutionTime.STATIC_INIT)
+    public void gatherRateLimitCheck(BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
+            CurateOutcomeBuildItem curateOutcomeBuildItem,
+            OutputTargetBuildItem outputTargetBuildItem,
+            GradleConfigRecorder recorder) {
+
+        File projectDir = highestKnownProjectDirectory(curateOutcomeBuildItem, outputTargetBuildItem);
+
+        syntheticBeans.produce(
+                SyntheticBeanBuildItem.configure(GradleConfig.class)
+                        .scope(ApplicationScoped.class)
+                        .unremovable()
+                        .runtimeValue(recorder.create(projectDir.getAbsolutePath()))
+                        .done());
+    }
+
+    @BuildStep(onlyIf = IsDevelopment.class)
+    public JsonRPCProvidersBuildItem rpcProvider() {
+        return new JsonRPCProvidersBuildItem(GradleJsonRPCService.class);
+    }
+
+    @BuildStep(onlyIf = IsDevelopment.class)
     public CardPageBuildItem pages(
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             OutputTargetBuildItem outputTargetBuildItem) {
-        File rootFolder = highestKnownProjectDirectory(curateOutcomeBuildItem, outputTargetBuildItem);
         CardPageBuildItem pageBuildItem = new CardPageBuildItem();
         try (ProjectConnection con = GradleConnector.newConnector()
-                .forProjectDirectory(rootFolder)
+                .forProjectDirectory(highestKnownProjectDirectory(curateOutcomeBuildItem, outputTargetBuildItem))
                 .connect()) {
 
             GradleProject project = con.getModel(GradleProject.class);
@@ -47,6 +79,12 @@ class GradleUiProcessor {
                             .showColumn("project")
                             .showColumn("name")
                             .showColumn("description"));
+
+            pageBuildItem
+                    .addPage(Page.webComponentPageBuilder()
+                            .icon("font-awesome-solid:clock")
+                            .componentLink("qwc-gradle-tasks.js")
+                            .staticLabel("test"));
         }
 
         return pageBuildItem;
@@ -63,7 +101,7 @@ class GradleUiProcessor {
     }
 
     private File highestKnownProjectDirectory(CurateOutcomeBuildItem curateOutcomeBuildItem,
-                                              OutputTargetBuildItem outputTargetBuildItem) {
+            OutputTargetBuildItem outputTargetBuildItem) {
         ApplicationModel applicationModel = curateOutcomeBuildItem.getApplicationModel();
         WorkspaceModule workspaceModule = applicationModel.getAppArtifact().getWorkspaceModule();
         if (workspaceModule != null) {

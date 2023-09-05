@@ -1,4 +1,4 @@
-package io.quarkiverse.gradleui.gradle.ui.it;
+package io.quarkiverse.gradleui.it;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.is;

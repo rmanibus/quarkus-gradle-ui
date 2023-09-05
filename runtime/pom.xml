@@ -3,7 +3,7 @@
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>io.quarkiverse.gradleUI</groupId>
+    <groupId>io.quarkiverse.gradleui</groupId>
     <artifactId>quarkus-gradle-ui-parent</artifactId>
     <version>999-SNAPSHOT</version>
   </parent>
@@ -14,6 +14,15 @@
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-arc</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-vertx</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.gradle</groupId>
+      <artifactId>gradle-tooling-api</artifactId>
+      <version>8.3</version>
     </dependency>
   </dependencies>
   <build>
