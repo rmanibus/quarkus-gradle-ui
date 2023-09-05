@@ -1,0 +1,5 @@
+name: quarkus-gradle-ui
+title: Quarkus Gradle UI
+version: dev
+nav:
+  - modules/ROOT/nav.adoc
