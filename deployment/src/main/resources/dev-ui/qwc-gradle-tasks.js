@@ -68,6 +68,16 @@ export class QwcGradleTasks extends LitElement {
                         ${columnBodyRenderer(this._taskRenderer, [])}
                         resizable>
                     </vaadin-grid-column>
+                    <vaadin-grid-column auto-width
+                        header="Project"
+                        ${columnBodyRenderer(this._projectRenderer, [])}
+                        resizable>
+                    </vaadin-grid-column>
+                    <vaadin-grid-column auto-width
+                        header="Description"
+                        ${columnBodyRenderer(this._descriptionRenderer, [])}
+                        resizable>
+                    </vaadin-grid-column>
                 </vaadin-grid>
                 `;
     }
@@ -81,7 +91,16 @@ export class QwcGradleTasks extends LitElement {
         <code>${task.name}</code>
     `;
     }
-
+    _projectRenderer(task) {
+      return html`
+        <code>${task.project}</code>
+    `;
+    }
+    _descriptionRenderer(task) {
+      return html`
+        <code>${task.description}</code>
+    `;
+    }
     _executeTask(id) {
         this.jsonRpc.executeTask(id).then(jsonResponse => {
             if (jsonResponse.result.success) {
