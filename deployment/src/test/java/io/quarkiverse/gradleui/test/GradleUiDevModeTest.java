@@ -1,4 +1,4 @@
-package io.quarkiverse.gradleui.gradle.ui.test;
+package io.quarkiverse.gradleui.test;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;

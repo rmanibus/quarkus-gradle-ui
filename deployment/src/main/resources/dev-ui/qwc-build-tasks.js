@@ -8,7 +8,7 @@ import '@vaadin/text-field';
 /**
  * This component shows gradle tasks.
  */
-export class QwcGradleTasks extends LitElement {
+export class QwcBuildTasks extends LitElement {
 
     jsonRpc = new JsonRpc(this);
 
@@ -112,4 +112,4 @@ export class QwcGradleTasks extends LitElement {
 
 
 }
-customElements.define('qwc-gradle-tasks', QwcGradleTasks);
+customElements.define('qwc-build-tasks', QwcBuildTasks);

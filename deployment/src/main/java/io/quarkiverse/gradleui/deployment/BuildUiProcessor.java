@@ -10,9 +10,9 @@ import org.gradle.tooling.GradleConnector;
 import org.gradle.tooling.ProjectConnection;
 import org.gradle.tooling.model.GradleProject;
 
-import io.quarkiverse.gradleui.runtime.GradleConfig;
-import io.quarkiverse.gradleui.runtime.GradleConfigRecorder;
-import io.quarkiverse.gradleui.runtime.GradleJsonRPCService;
+import io.quarkiverse.gradleui.runtime.BuildConfig;
+import io.quarkiverse.gradleui.runtime.BuildConfigRecorder;
+import io.quarkiverse.gradleui.runtime.BuildJsonRPCService;
 import io.quarkiverse.gradleui.runtime.Task;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.bootstrap.model.ApplicationModel;
@@ -31,7 +31,7 @@ import io.quarkus.devui.spi.page.FooterPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.devui.spi.page.WebComponentPageBuilder;
 
-class GradleUiProcessor {
+class BuildUiProcessor {
 
     private static final String FEATURE = "gradle-ui";
 
@@ -46,12 +46,12 @@ class GradleUiProcessor {
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             OutputTargetBuildItem outputTargetBuildItem,
             List<BuildTaskItem> buildTaskItems,
-            GradleConfigRecorder recorder) {
+            BuildConfigRecorder recorder) {
 
         File projectDir = highestKnownProjectDirectory(curateOutcomeBuildItem, outputTargetBuildItem);
 
         syntheticBeans.produce(
-                SyntheticBeanBuildItem.configure(GradleConfig.class)
+                SyntheticBeanBuildItem.configure(BuildConfig.class)
                         .scope(ApplicationScoped.class)
                         .unremovable()
                         .runtimeValue(recorder.create(projectDir.getAbsolutePath(),
@@ -62,7 +62,7 @@ class GradleUiProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     public JsonRPCProvidersBuildItem rpcProvider() {
-        return new JsonRPCProvidersBuildItem(GradleJsonRPCService.class);
+        return new JsonRPCProvidersBuildItem(BuildJsonRPCService.class);
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)

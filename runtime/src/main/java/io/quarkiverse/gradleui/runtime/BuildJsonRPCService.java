@@ -13,6 +13,7 @@ import org.gradle.tooling.ProjectConnection;
 import org.gradle.tooling.events.ProgressListener;
 
 import io.quarkus.arc.Unremovable;
+import io.quarkus.logging.Log;
 import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.operators.multi.processors.BroadcastProcessor;
@@ -21,15 +22,15 @@ import io.vertx.core.json.JsonObject;
 
 @ApplicationScoped
 @Unremovable
-public class GradleJsonRPCService {
+public class BuildJsonRPCService {
 
     final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy - HH:mm:ss Z");
-    final GradleConfig config;
+    final BuildConfig config;
 
     final BroadcastProcessor<JsonObject> progress = BroadcastProcessor.create();;
 
     @Inject
-    GradleJsonRPCService(GradleConfig config) {
+    BuildJsonRPCService(BuildConfig config) {
         this.config = config;
     }
 

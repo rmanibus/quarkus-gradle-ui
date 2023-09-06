@@ -5,7 +5,7 @@ import { LogController } from 'log-controller';
 /**
  * This component shows the log of scheduled executions.
  */
-export class QwcSchedulerLog extends LitElement {
+export class QwcBuildLog extends LitElement {
     
     jsonRpc = new JsonRpc(this, false);
     logControl = new LogController(this);
@@ -149,4 +149,4 @@ export class QwcSchedulerLog extends LitElement {
         }
     }
 }
-customElements.define('qwc-scheduler-log', QwcSchedulerLog);
+customElements.define('qwc-build-log', QwcBuildLog);

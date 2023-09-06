@@ -3,8 +3,8 @@ package io.quarkiverse.gradleui.runtime;
 import java.io.File;
 import java.util.List;
 
-public class GradleConfig {
-    GradleConfig(File projectDir, List<Task> tasks) {
+public class BuildConfig {
+    BuildConfig(File projectDir, List<Task> tasks) {
         this.projectDir = projectDir;
         this.tasks = tasks;
     }
