@@ -41,10 +41,9 @@ export class QwcGradleTasks extends LitElement {
         super.connectedCallback();
         this.jsonRpc.getTasks()
             .then(jsonResponse => {
-                console.log(jsonResponse);
                 this._tasks = jsonResponse.result.tasks;
-
-            }).catch(console.log);
+            })
+            .catch(console.log);
     }
 
     disconnectedCallback() {
@@ -102,7 +101,7 @@ export class QwcGradleTasks extends LitElement {
     `;
     }
     _executeTask(id) {
-        this.jsonRpc.executeTask(id).then(jsonResponse => {
+        this.jsonRpc.executeTask({task: id}).then(jsonResponse => {
             if (jsonResponse.result.success) {
                 notifier.showSuccessMessage(jsonResponse.result.message);
             } else {

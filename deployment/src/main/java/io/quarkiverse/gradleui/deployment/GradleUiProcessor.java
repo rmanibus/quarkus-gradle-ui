@@ -27,7 +27,9 @@ import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
+import io.quarkus.devui.spi.page.FooterPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
+import io.quarkus.devui.spi.page.WebComponentPageBuilder;
 
 class GradleUiProcessor {
 
@@ -71,6 +73,7 @@ class GradleUiProcessor {
         try (ProjectConnection con = GradleConnector.newConnector()
                 .forProjectDirectory(highestKnownProjectDirectory(curateOutcomeBuildItem, outputTargetBuildItem))
                 .connect()) {
+
             List<Task> tasks = traverse(con.getModel(GradleProject.class));
             for (Task task : tasks) {
                 buildTaskProducer.produce(new BuildTaskItem(task));
@@ -79,17 +82,21 @@ class GradleUiProcessor {
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
-    public CardPageBuildItem pages(
-            CurateOutcomeBuildItem curateOutcomeBuildItem,
-            OutputTargetBuildItem outputTargetBuildItem,
-            List<BuildTaskItem> buildTaskItems) {
+    public CardPageBuildItem pages(List<BuildTaskItem> buildTaskItems,
+            BuildProducer<FooterPageBuildItem> footerPages) {
         CardPageBuildItem pageBuildItem = new CardPageBuildItem();
 
         pageBuildItem
                 .addPage(Page.webComponentPageBuilder()
                         .icon("font-awesome-solid:list-check")
-                        .componentLink("qwc-gradle-tasks.js")
+                        .componentLink("qwc-build-tasks.js")
                         .staticLabel(String.valueOf(buildTaskItems.size())));
+
+        WebComponentPageBuilder logPageBuilder = Page.webComponentPageBuilder()
+                .icon("font-awesome-solid:list-check")
+                .title("Build UI")
+                .componentLink("qwc-build-log.js");
+        footerPages.produce(new FooterPageBuildItem(logPageBuilder));
 
         return pageBuildItem;
     }
