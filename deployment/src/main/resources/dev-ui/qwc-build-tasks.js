@@ -43,6 +43,15 @@ export class QwcBuildTasks extends LitElement {
             .then(jsonResponse => {
                 this._tasks = jsonResponse.result.tasks;
             })
+            .then(() => {
+                this.jsonRpc.streamResult().onNext(jsonResponse => {
+                    if (jsonResponse.result.success) {
+                        notifier.showSuccessMessage("Task " + id + " Completed");
+                    } else {
+                        notifier.showErrorMessage("Failed to Execute" + id + ": " + jsonResponse.result.message);
+                    }
+                });
+            })
             .catch(console.log);
     }
 
@@ -103,9 +112,9 @@ export class QwcBuildTasks extends LitElement {
     _executeTask(id) {
         this.jsonRpc.executeTask({task: id}).then(jsonResponse => {
             if (jsonResponse.result.success) {
-                notifier.showSuccessMessage(jsonResponse.result.message);
+                notifier.showSuccessMessage("Triggered " + id);
             } else {
-                notifier.showErrorMessage(jsonResponse.result.message);
+                notifier.showErrorMessage("Failed to Trigger" + id + ": " + jsonResponse.result.message);
             }
         });
     }

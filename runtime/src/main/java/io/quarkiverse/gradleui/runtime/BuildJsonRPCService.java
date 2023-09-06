@@ -7,13 +7,10 @@ import java.time.format.DateTimeFormatter;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-import org.gradle.tooling.BuildLauncher;
-import org.gradle.tooling.GradleConnector;
-import org.gradle.tooling.ProjectConnection;
+import org.gradle.tooling.*;
 import org.gradle.tooling.events.ProgressListener;
 
 import io.quarkus.arc.Unremovable;
-import io.quarkus.logging.Log;
 import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.operators.multi.processors.BroadcastProcessor;
@@ -27,7 +24,8 @@ public class BuildJsonRPCService {
     final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy - HH:mm:ss Z");
     final BuildConfig config;
 
-    final BroadcastProcessor<JsonObject> progress = BroadcastProcessor.create();;
+    final BroadcastProcessor<JsonObject> progress = BroadcastProcessor.create();
+    final BroadcastProcessor<JsonObject> result = BroadcastProcessor.create();;
 
     @Inject
     BuildJsonRPCService(BuildConfig config) {
@@ -53,6 +51,10 @@ public class BuildJsonRPCService {
         return progress;
     }
 
+    public Multi<JsonObject> streamResult() {
+        return result;
+    }
+
     public JsonObject executeTask(String task) {
         try (ProjectConnection connection = GradleConnector.newConnector()
                 .forProjectDirectory(config.getProjectDir())
@@ -66,7 +68,23 @@ public class BuildJsonRPCService {
                         .put("message", event.getDisplayName()));
             });
             build.forTasks(task);
-            build.run();
+            build.run(new ResultHandler<>() {
+
+                @Override
+                public void onComplete(Void r) {
+                    result.onNext(new JsonObject()
+                            .put("task", task)
+                            .put("success", true));
+                }
+
+                @Override
+                public void onFailure(GradleConnectionException failure) {
+                    result.onNext(new JsonObject()
+                            .put("task", task)
+                            .put("success", false)
+                            .put("message", failure.getMessage()));
+                }
+            });
             return new JsonObject()
                     .put("success", true);
         } catch (Exception e) {
