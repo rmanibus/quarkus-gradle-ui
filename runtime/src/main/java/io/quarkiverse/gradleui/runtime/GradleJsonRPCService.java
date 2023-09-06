@@ -1,15 +1,7 @@
 package io.quarkiverse.gradleui.runtime;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-
-import org.gradle.tooling.GradleConnector;
-import org.gradle.tooling.ProjectConnection;
-import org.gradle.tooling.model.GradleProject;
-import org.gradle.tooling.model.GradleTask;
 
 import io.quarkus.arc.Unremovable;
 import io.smallrye.common.annotation.NonBlocking;
@@ -20,26 +12,11 @@ import io.vertx.core.json.JsonObject;
 @Unremovable
 public class GradleJsonRPCService {
 
-    final List<Task> tasks;
+    final GradleConfig config;
 
     @Inject
     GradleJsonRPCService(GradleConfig config) {
-        try (ProjectConnection con = GradleConnector.newConnector()
-                .forProjectDirectory(config.getProjectDir())
-                .connect()) {
-            GradleProject project = con.getModel(GradleProject.class);
-            tasks = traverse(project);
-        }
-    }
-
-    private List<Task> traverse(GradleProject gradleProject) {
-        List<Task> tasks = gradleProject.getTasks().stream()
-                .map(Task::new)
-                .collect(Collectors.toList());
-        for (var child : gradleProject.getChildren().getAll()) {
-            tasks.addAll(traverse(child));
-        }
-        return tasks;
+        this.config = config;
     }
 
     @NonBlocking
@@ -47,7 +24,7 @@ public class GradleJsonRPCService {
         JsonObject ret = new JsonObject();
         JsonArray tasksJson = new JsonArray();
         ret.put("tasks", tasksJson);
-        for (Task task : tasks) {
+        for (Task task : config.getTasks()) {
             JsonObject taskJson = new JsonObject();
             taskJson.put("name", task.name);
             taskJson.put("description", task.description);
@@ -57,15 +34,4 @@ public class GradleJsonRPCService {
         return ret;
     }
 
-    public static class Task {
-        Task(GradleTask task) {
-            this.project = task.getProject().getName();
-            this.name = task.getName();
-            this.description = task.getDescription();
-        }
-
-        public final String project;
-        public final String name;
-        public final String description;
-    }
 }

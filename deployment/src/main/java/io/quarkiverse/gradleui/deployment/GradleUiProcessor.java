@@ -9,11 +9,11 @@ import jakarta.enterprise.context.ApplicationScoped;
 import org.gradle.tooling.GradleConnector;
 import org.gradle.tooling.ProjectConnection;
 import org.gradle.tooling.model.GradleProject;
-import org.gradle.tooling.model.GradleTask;
 
 import io.quarkiverse.gradleui.runtime.GradleConfig;
 import io.quarkiverse.gradleui.runtime.GradleConfigRecorder;
 import io.quarkiverse.gradleui.runtime.GradleJsonRPCService;
+import io.quarkiverse.gradleui.runtime.Task;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
@@ -40,9 +40,10 @@ class GradleUiProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     @Record(ExecutionTime.STATIC_INIT)
-    public void gatherRateLimitCheck(BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
+    public void produceGradleConfig(BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             OutputTargetBuildItem outputTargetBuildItem,
+            List<BuildTaskItem> buildTaskItems,
             GradleConfigRecorder recorder) {
 
         File projectDir = highestKnownProjectDirectory(curateOutcomeBuildItem, outputTargetBuildItem);
@@ -51,7 +52,9 @@ class GradleUiProcessor {
                 SyntheticBeanBuildItem.configure(GradleConfig.class)
                         .scope(ApplicationScoped.class)
                         .unremovable()
-                        .runtimeValue(recorder.create(projectDir.getAbsolutePath()))
+                        .runtimeValue(recorder.create(projectDir.getAbsolutePath(),
+                                buildTaskItems.stream().map(BuildTaskItem::getTask)
+                                        .collect(Collectors.toList())))
                         .done());
     }
 
@@ -61,31 +64,32 @@ class GradleUiProcessor {
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
-    public CardPageBuildItem pages(
+    public void gradleTasks(
             CurateOutcomeBuildItem curateOutcomeBuildItem,
-            OutputTargetBuildItem outputTargetBuildItem) {
-        CardPageBuildItem pageBuildItem = new CardPageBuildItem();
+            OutputTargetBuildItem outputTargetBuildItem,
+            BuildProducer<BuildTaskItem> buildTaskProducer) {
         try (ProjectConnection con = GradleConnector.newConnector()
                 .forProjectDirectory(highestKnownProjectDirectory(curateOutcomeBuildItem, outputTargetBuildItem))
                 .connect()) {
-
-            GradleProject project = con.getModel(GradleProject.class);
-            pageBuildItem
-                    .addBuildTimeData("gradleTasks", traverse(project));
-            pageBuildItem
-                    .addPage(Page.tableDataPageBuilder("All Tasks")
-                            .buildTimeDataKey("gradleTasks")
-                            .icon("font-awesome-solid:table")
-                            .showColumn("project")
-                            .showColumn("name")
-                            .showColumn("description"));
-
-            pageBuildItem
-                    .addPage(Page.webComponentPageBuilder()
-                            .icon("font-awesome-solid:clock")
-                            .componentLink("qwc-gradle-tasks.js")
-                            .staticLabel("test"));
+            List<Task> tasks = traverse(con.getModel(GradleProject.class));
+            for (Task task : tasks) {
+                buildTaskProducer.produce(new BuildTaskItem(task));
+            }
         }
+    }
+
+    @BuildStep(onlyIf = IsDevelopment.class)
+    public CardPageBuildItem pages(
+            CurateOutcomeBuildItem curateOutcomeBuildItem,
+            OutputTargetBuildItem outputTargetBuildItem,
+            List<BuildTaskItem> buildTaskItems) {
+        CardPageBuildItem pageBuildItem = new CardPageBuildItem();
+
+        pageBuildItem
+                .addPage(Page.webComponentPageBuilder()
+                        .icon("font-awesome-solid:list-check")
+                        .componentLink("qwc-gradle-tasks.js")
+                        .staticLabel(String.valueOf(buildTaskItems.size())));
 
         return pageBuildItem;
     }
@@ -112,15 +116,4 @@ class GradleUiProcessor {
         return outputTargetBuildItem.getOutputDirectory().toFile();
     }
 
-    public static class Task {
-        Task(GradleTask task) {
-            this.project = task.getProject().getName();
-            this.name = task.getName();
-            this.description = task.getDescription();
-        }
-
-        public final String project;
-        public final String name;
-        public final String description;
-    }
 }
